@@ -164,9 +164,14 @@ Stream"
   (put-bytes buf (to-ascii nbulks))
   (put-bytes buf CRLF))
 
+(let [byte-array-class (class (into-array Byte/TYPE []))]
+  (defn- bytes? [obj]
+    (= (class obj) byte-array-class)))
+
 (defn- write-bulk [buf bulk]
-  (let [s (str bulk)
-        data (.getBytes s *string-charset*)
+  (let [data (cond (bytes? bulk) bulk
+                   (= (class bulk) java.nio.ByteBuffer) (.getBytes bulk)
+                   true (.getBytes (str bulk) *string-charset*))
         len (alength data)]
     (put-byte buf bulk-length-marker)
     (put-bytes buf (to-ascii len))
