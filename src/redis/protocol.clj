@@ -22,6 +22,8 @@
 
 (def #^String *string-charset* "UTF-8")
 
+(def #^Boolean *return-byte-arrays?* false)
+
 (def CR (byte 0x0d))
 (def LF (byte 0x0a))
 (def CRLF (byte-array 2 [CR LF]))
@@ -48,7 +50,9 @@
         (throw (Exception. (str "End of stream reached"))))
       (when (not= nread count)
         (throw (Exception. (str "Unable to read" count "bytes, read" nread "bytes"))))
-      (String. buf *string-charset*)))
+      (if *return-byte-arrays?*
+        buf
+        (String. buf *string-charset*))))
 
   (read-crlf [this]
     (read-expected-byte this CR)
@@ -108,7 +112,7 @@
     (parse-int number)))
 
 (defn read-reply [channel]
-  (let [type (read channel 1)]
+  (let [type (binding [*return-byte-arrays?* false] (read channel 1))]
     (case type
       "-" (read-error-reply channel)
       "+" (read-single-line-reply channel)

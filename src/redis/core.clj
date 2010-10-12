@@ -3,7 +3,8 @@
   (:require [clojure.contrib.ns-utils :only (immigrate) :as contrib])
   (:use [redis.connection :only (with-connection make-non-pooled-connection-pool)]
         [redis.connection-pool :only (make-connection-pool)]
-        [redis.channel :only (make-direct-channel)]))
+        [redis.channel :only (make-direct-channel)]
+        [redis.protocol :only (*return-byte-arrays?*)]))
 
 ;;;; Vars
 
@@ -31,6 +32,13 @@
      `(with-connection connection# *pool* ~server-spec
         (binding [*channel* (make-direct-channel connection#)]
           ~@body))))
+
+(defmacro as-bytes
+  "Wrap a Redis command in this macro to make it return
+  byte array(s) instead of string(s)."
+  [& body]
+  `(binding [*return-byte-arrays?* true]
+     ~@body))
 
 ;; Immigrate commands
 (contrib/immigrate 'redis.commands)
