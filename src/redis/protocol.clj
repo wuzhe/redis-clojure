@@ -44,15 +44,16 @@
 (extend-type BufferedInputStream
   RedisInputStream
   (read [this count]
-    (let [buf (byte-array count)
-          nread (.read this buf 0 count)]
-      (when (= -1 nread)
-        (throw (Exception. (str "End of stream reached"))))
-      (when (not= nread count)
-        (throw (Exception. (str "Unable to read" count "bytes, read" nread "bytes"))))
-      (if *return-byte-arrays?*
-        buf
-        (String. buf *string-charset*))))
+    (let [buf (byte-array count)]
+      (loop [start 0]
+        (let [nread (.read this buf start (- count start))]
+          (when (= -1 nread)
+            (throw (Exception. (str "End of stream reached"))))
+          (if (= (+ nread start) count)
+            (if *return-byte-arrays?*
+              buf
+              (String. buf *string-charset*))
+            (recur (+ nread start)))))))
 
   (read-crlf [this]
     (read-expected-byte this CR)
